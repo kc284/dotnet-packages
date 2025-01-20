@@ -78,7 +78,6 @@ function applyPatch {
 
 $SWITCHES = '/nologo', '/m', '/verbosity:normal', '/p:Configuration=Release', `
             '/p:DebugSymbols=true', '/p:DebugType=pdbonly'
-$RESTORE_SWITCHES= '/restore', '/p:RestoreNoHttpCache=true'
 $FRAME48 = '/p:TargetFrameworkVersion=v4.8'
 $VS_TOOLS = '/toolsversion:Current'
 
@@ -100,6 +99,16 @@ msbuild /ver
 Write-Host ''
 
 mkdirClean $BUILD_DIR, $SCRATCH_DIR, $OUTPUT_DIR, $OUTPUT_48_DIR, $OUTPUT_47_DIR, $OUTPUT_46_DIR
+
+# prepare NuGet Config
+
+$NUGET_CONFIG_FILE = "NuGet.Config"
+$RESTORE_NUGET_CONFIG_FILE  = "$SCRATCH_DIR\$NUGET_CONFIG_FILE"
+$RESTORE_SWITCHES= '/restore', '/p:RestoreNoHttpCache=true', "-p:RestoreConfigFile=$RESTORE_NUGET_CONFIG_FILE"
+
+Copy-Item "$REPO\$NUGET_CONFIG_FILE" -Destination "$RESTORE_NUGET_CONFIG_FILE"
+((Get-Content -path $RESTORE_NUGET_CONFIG_FILE -Raw) -replace 'https://api.nuget.org/v3/index.json', $NugetSource) |`
+ Set-Content -Path $RESTORE_NUGET_CONFIG_FILE
 
 #prepare sources and manifest
 
@@ -143,13 +152,13 @@ Move-Item "$SCRATCH_DIR\log4net\build\artifacts\log4net.2.0.15.nupkg" -Destinati
 #prepare sharpziplib
 
 mkdirClean "$SCRATCH_DIR\sharpziplib"
-Expand-Archive -DestinationPath "$SCRATCH_DIR\sharpziplib" -Path "$REPO\SharpZipLib\SharpZipLib_0854_SourceSamples.zip"
+Expand-Archive -DestinationPath "$SCRATCH_DIR\sharpziplib" -Path "$REPO\SharpZipLib\SharpZipLib-1.3.3.zip"
 
 Get-ChildItem $PATCHES | where { $_.Name.StartsWith("patch-sharpziplib") } | % { $_.FullName } |`
   applyPatch -Path "$SCRATCH_DIR\sharpziplib"
 
-msbuild $SWITCHES $FRAME48 $VS_TOOLS $SIGN "$SCRATCH_DIR\sharpziplib\src\ICSharpCode.SharpZLib.csproj"
-'dll', 'pdb' | % { "$SCRATCH_DIR\sharpziplib\bin\ICSharpCode.SharpZipLib." + $_ } |`
+msbuild $SWITCHES $RESTORE_SWITCHES $VS_TOOLS $SIGN "$SCRATCH_DIR\sharpziplib\SharpZipLib-1.3.3\src\ICSharpCode.SharpZipLib\ICSharpCode.SharpZipLib.csproj"
+'dll', 'pdb' | % { "$SCRATCH_DIR\sharpziplib\SharpZipLib-1.3.3\src\ICSharpCode.SharpZipLib\bin\Release\net48\ICSharpCode.SharpZipLib." + $_ } |`
   Move-Item -Destination $OUTPUT_48_DIR
 
 #prepare discutils
