@@ -1,5 +1,14 @@
 # Third-Party Components
 
+As of February 2025 this copy of the dotnet-packages repository is considered
+archived. As such it will not reflect the latest state of development in this
+repo, and any pull requests will not be reviewed/merged. If you have any
+feedback on this repo, please send it to feedback@xenserver.com.
+
+---
+
+# Overview
+
 This repository contains the source code and patches for the third-party
 libraries:
 
